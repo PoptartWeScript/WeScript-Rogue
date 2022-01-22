@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using WeScriptWrapper;
 
 
@@ -31,46 +31,38 @@ namespace RogueCompany
 
             
             if (Program.GWorldPtr != IntPtr.Zero)
-            {
-                
-                var UGameInstance = Memory.ZwReadPointer(Program.processHandle, (IntPtr)(Program.GWorldPtr.ToInt64() + Offsets.UE.UWorld.OwningGameInstance), true);
-                if (UGameInstance != IntPtr.Zero)
+            {                
+                Program.UGameInstance = Memory.ZwReadPointer(Program.processHandle, (IntPtr)(Program.GWorldPtr.ToInt64() + Offsets.UE.UWorld.OwningGameInstance), true);
+                if (Program.UGameInstance != IntPtr.Zero)
                 {
-                    var localPlayerArray = Memory.ZwReadPointer(Program.processHandle, (IntPtr)(UGameInstance.ToInt64() + Offsets.UE.UGameInstance.LocalPlayers), true);
-                    if (localPlayerArray != IntPtr.Zero)
+                    Program.localPlayerArray = Memory.ZwReadPointer(Program.processHandle, (IntPtr)(Program.UGameInstance.ToInt64() + Offsets.UE.UGameInstance.LocalPlayers), true);
+                    if (Program.localPlayerArray != IntPtr.Zero)
                     {
-                        var ULocalPlayer = Memory.ZwReadPointer(Program.processHandle, localPlayerArray, true);
-                        if (ULocalPlayer != IntPtr.Zero)
+                        Program.ULocalPlayer = Memory.ZwReadPointer(Program.processHandle, Program.localPlayerArray, true);
+                        if (Program.ULocalPlayer != IntPtr.Zero)
                         {
-                            var ULocalPlayerControler = Memory.ZwReadPointer(Program.processHandle, (IntPtr)(ULocalPlayer.ToInt64() + Offsets.UE.UPlayer.PlayerController), true);
+                            Program.ULocalPlayerControler = Memory.ZwReadPointer(Program.processHandle, (IntPtr)(Program.ULocalPlayer.ToInt64() + Offsets.UE.UPlayer.PlayerController), true);
 
-                            if (ULocalPlayerControler != IntPtr.Zero)
+                            if (Program.ULocalPlayerControler != IntPtr.Zero)
                             {
-                                var Upawn = Memory.ZwReadPointer(Program.processHandle, (IntPtr)(ULocalPlayerControler.ToInt64() + Offsets.UE.APlayerController.AcknowledgedPawn), true);
-                                Program.UplayerState = Memory.ZwReadPointer(Program.processHandle, (IntPtr)(Upawn.ToInt64() + Offsets.UE.APawn.PlayerState), true);                                                                
-                                var APlayerCameraManager = Memory.ZwReadPointer(Program.processHandle, (IntPtr)ULocalPlayerControler.ToInt64() + 0x2B8, true);
-                                if (APlayerCameraManager != IntPtr.Zero)
+                                Program.Upawn = Memory.ZwReadPointer(Program.processHandle, (IntPtr)(Program.ULocalPlayerControler.ToInt64() + Offsets.UE.APlayerController.AcknowledgedPawn), true);
+                                Program.UplayerState = Memory.ZwReadPointer(Program.processHandle, (IntPtr)(Program.Upawn.ToInt64() + Offsets.UE.APawn.PlayerState), true);
+                                Program.APlayerCameraManager = Memory.ZwReadPointer(Program.processHandle, (IntPtr)Program.ULocalPlayerControler.ToInt64() + 0x2B8, true);
+                                if (Program.APlayerCameraManager != IntPtr.Zero)
                                 {
                                     Program.FMinimalViewInfo_Location = Memory.ZwReadVector3(Program.processHandle,
-                                        (IntPtr)APlayerCameraManager.ToInt64() + 0x1AB0 + 0x0000);
+                                        (IntPtr)Program.APlayerCameraManager.ToInt64() + 0x1AB0 + 0x0000);
                                     Program.FMinimalViewInfo_Rotation = Memory.ZwReadVector3(Program.processHandle,
-                                        (IntPtr)APlayerCameraManager.ToInt64() + 0x1AB0 + 0x000C);
-                                    var FMinimalViewInfo_FOV2 = Memory.ZwReadFloat(Program.processHandle,
-                                        (IntPtr)APlayerCameraManager.ToInt64() + 0x1AB0 + 0x0018);
+                                        (IntPtr)Program.APlayerCameraManager.ToInt64() + 0x1AB0 + 0x000C);
+                                    float FMinimalViewInfo_FOV2 = Memory.ZwReadFloat(Program.processHandle,
+                                        (IntPtr)Program.APlayerCameraManager.ToInt64() + 0x1AB0 + 0x0018);
                                     float RadFOV = (Program.wndSize.Y * 0.5f) / tanf(Deg2Rad(FMinimalViewInfo_FOV2 * 0.5f));
                                     Program.FMinimalViewInfo_FOV = (float)(2 * Rad2Deg(atanf(Program.wndSize.X * 0.5f / RadFOV)));
                                 }
-
                             }
-
                         }
                     }
-
-
-
-
                 }
-
             }
         }
     }
