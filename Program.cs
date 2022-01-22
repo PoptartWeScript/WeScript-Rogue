@@ -72,9 +72,9 @@ namespace RogueCompany
                 public static readonly MenuBool AimGlobalBool = new MenuBool("enableaim", "Enable Aimbot Features", true);
                 public static readonly MenuKeyBind AimKey = new MenuKeyBind("aimkey", "Aimbot HotKey (HOLD)", VirtualKeyCode.LeftMouse, KeybindType.Hold, false);
                 public static readonly MenuSlider AimSpeed = new MenuSlider("aimspeed", "Aimbot Speed %", 12, 1, 100);
-                public static readonly MenuSlider Distance = new MenuSlider("Distance Killer", "Distance kill%", 12, 1, 100);
+                public static readonly MenuSlider Distance = new MenuSlider("Distance", "Distance kill%", 12, 1, 100);
                 public static readonly MenuSlider AimFov = new MenuSlider("aimfov", "Aimbot FOV", 100, 4, 1000);
-                public static readonly MenuBool DrawFov = new MenuBool("DrawFOV", "Enable FOV Circle Features Survivor", true);
+                public static readonly MenuBool DrawFov = new MenuBool("DrawFOV", "Enable FOV Circle Features", true);
                 public static readonly MenuColor AimFovColor = new MenuColor("aimfovcolor", "FOV Color", new SharpDX.Color(255, 255, 255, 30));
                 public static readonly MenuBool NoRecoil = new MenuBool("noRecoil", "Enable No Recoil RISKY not tested if bannable", false);
             }
@@ -90,7 +90,7 @@ namespace RogueCompany
                 Components.VisualsComponent.DrawBoxBorder.SetToolTip("Drawing borders may take extra performance (FPS) on low-end computers"),
             };
 
-            AimbotMenu = new Menu("aimbotmenu", "Aimbot Killer Menu")
+            AimbotMenu = new Menu("aimbotmenu", "Aimbot Menu")
             {
                 Components.AimbotComponent.AimGlobalBool,
                 Components.AimbotComponent.AimKey,
