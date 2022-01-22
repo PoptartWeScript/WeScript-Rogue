@@ -34,7 +34,9 @@ namespace RogueCompany
         public static IntPtr GWorldPtr = IntPtr.Zero;
         public static IntPtr GNamesPtr = IntPtr.Zero;
         public static IntPtr FNamePool = IntPtr.Zero;
+        public static IntPtr ULocalPlayerControler = IntPtr.Zero;
         public static bool IsDowned = false;
+        public static IntPtr bKickbackEnabled = IntPtr.Zero;
         public static uint Health = 0;
         public static Vector3 FMinimalViewInfo_Location = new Vector3(0, 0, 0);
         public static Vector3 FMinimalViewInfo_Rotation = new Vector3(0, 0, 0);
@@ -74,6 +76,7 @@ namespace RogueCompany
                 public static readonly MenuSlider AimFov = new MenuSlider("aimfov", "Aimbot FOV", 100, 4, 1000);
                 public static readonly MenuBool DrawFov = new MenuBool("DrawFOV", "Enable FOV Circle Features Survivor", true);
                 public static readonly MenuColor AimFovColor = new MenuColor("aimfovcolor", "FOV Color", new SharpDX.Color(255, 255, 255, 30));
+                public static readonly MenuBool NoRecoil = new MenuBool("noRecoil", "Enable No Recoil RISKY not tested if bannable", false);
             }
         }
         public static void InitializeMenu()
@@ -94,6 +97,8 @@ namespace RogueCompany
                 Components.AimbotComponent.AimSpeed,
                 Components.AimbotComponent.AimFov,
                 Components.AimbotComponent.DrawFov,
+                Components.AimbotComponent.AimFovColor,
+                Components.AimbotComponent.NoRecoil,
 
             };
             RootMenu = new WeScript.SDK.UI.Menu("Rogue", "WeScript.app Rogue Company --Poptart--", true)
@@ -152,6 +157,7 @@ namespace RogueCompany
         }
         private static void OnTick(int counter, EventArgs args)
         {
+            
             if (processHandle == IntPtr.Zero) //if we still don't have a handle to the process
             {
                 var wndHnd = Memory.FindWindowName("Rogue Company  "); //why the devs added spaces after the name?!
@@ -234,8 +240,7 @@ namespace RogueCompany
         {
             if (!gameProcessExists) return; //process is dead, don't bother drawing
             if ((!isGameOnTop) && (!isOverlayOnTop)) return; //if game and overlay are not on top, don't draw
-            if (!Components.MainAssemblyToggle.Enabled) return; //main menu boolean to toggle the cheat on or off            
-
+            if (!Components.MainAssemblyToggle.Enabled) return; //main menu boolean to toggle the cheat on or off                       
             double fClosestPos = 999999;
             GameCenterPos = new Vector2(wndSize.X / 2 + wndMargins.X, wndSize.Y / 2 + wndMargins.Y);
             GameCenterPos2 = new Vector2(wndSize.X / 2 + wndMargins.X, wndSize.Y / 2 + wndMargins.Y + 750.0f);//even if the game is windowed, calculate perfectly it's "center" for aim or crosshair
@@ -285,18 +290,28 @@ namespace RogueCompany
                                         if (retname.Contains("MainCharacter_C") || retname.Contains("DefaultPVPBotCharacter_C") || retname.Contains("DefaultBotCharacter_C")) EnemyID = AActorID;
                                         var actor_pawn = Memory.ZwReadPointer(processHandle, (IntPtr)AActor.ToInt64() + 0x118, true);
                                         var Playerstate = Memory.ZwReadPointer(processHandle, (IntPtr)actor_pawn.ToInt64() + 0x240, true);
-                                        IsDowned = Memory.ZwReadBool(processHandle, (IntPtr)Playerstate.ToInt64() + 0xC18);
+                                        IsDowned = Memory.ZwReadBool(processHandle, (IntPtr)AActor.ToInt64() + 0xC18);
+                                        bool bKickbackEnableds = Memory.ZwReadBool(processHandle, (IntPtr)Program.ULocalPlayerControler.ToInt64() + 0xAF8);
                                         var Offset_AKSTeamState = 0x398;
                                         var Offset_r_TeamNum = 0x220;
                                         var LAKSTeamState = Memory.ZwReadPointer(processHandle, (IntPtr)UplayerState.ToInt64() + Offset_AKSTeamState, true);
                                         LTeamNum = Memory.ZwReadPointer(processHandle, (IntPtr)LAKSTeamState.ToInt64() + Offset_r_TeamNum, true);
                                         var AKSTeamState = Memory.ZwReadPointer(processHandle, (IntPtr)Playerstate.ToInt64() + Offset_AKSTeamState, true);
                                         TeamNum = Memory.ZwReadPointer(processHandle, (IntPtr)AKSTeamState.ToInt64() + Offset_r_TeamNum, true);
+
+                                        if (Components.AimbotComponent.NoRecoil.Enabled)
+                                        {
+                                            bKickbackEnableds = Memory.ZwWriteBool(processHandle, (IntPtr)Program.ULocalPlayerControler.ToInt64() + 0xAF8, false);
+                                        }
+                                        else
+                                        {
+                                            bKickbackEnableds = Memory.ZwWriteBool(processHandle, (IntPtr)Program.ULocalPlayerControler.ToInt64() + 0xAF8, true);
+                                        }
+
                                     }
                                     if (Components.VisualsComponent.DrawTheVisuals.Enabled) //this should have been placed earlier?
                                     {
-                                        //Console.WriteLine(team);
-                                        //Console.WriteLine(team);
+                                        //if (Components.AimbotComponent.NoRecoil.Enabled) NoRecoil();
 
                                         int dist = (int)(GetDistance3D(FMinimalViewInfo_Location, tempVec));
 
@@ -338,7 +353,7 @@ namespace RogueCompany
 
                                                 if (Components.AimbotComponent.AimKey.Enabled && Components.AimbotComponent.AimGlobalBool.Enabled && dist > 5 && LTeamNum != TeamNum )
                                                 {
-
+                                                    
                                                     double DistX = AimTarg2D.X - GameCenterPos.X;
                                                     double DistY = (AimTarg2D.Y) - GameCenterPos.Y;
 
