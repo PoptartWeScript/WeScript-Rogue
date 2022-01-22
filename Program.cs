@@ -17,39 +17,65 @@ namespace RogueCompany
 {
     class Program
     {
-        public static IntPtr processHandle = IntPtr.Zero; //processHandle variable used by OpenProcess (once)
-        public static bool gameProcessExists = false; //avoid drawing if the game process is dead, or not existent
-        public static bool isWow64Process = false; //we all know the game is 32bit, but anyway...
-        public static bool isGameOnTop = false; //we should avoid drawing while the game is not set on top
-        public static bool isOverlayOnTop = false; //we might allow drawing visuals, while the user is working with the "menu"
-        public static uint PROCESS_ALL_ACCESS = 0x1FFFFF; //hardcoded access right to OpenProcess (even EAC strips some of the access flags)
-        public static Vector2 wndMargins = new Vector2(0, 0); //if the game window is smaller than your desktop resolution, you should avoid drawing outside of it
-        public static Vector2 wndSize = new Vector2(0, 0); //get the size of the game window ... to know where to draw
-        public static IntPtr GameBase = IntPtr.Zero;
-        public static IntPtr GameSize = IntPtr.Zero;
-        public static IntPtr FindWindow = IntPtr.Zero;
-        public static Vector2 GameCenterPos = new Vector2(0, 0);
-        public static Vector2 GameCenterPos2 = new Vector2(0, 0);
-        public static DateTime LastSpacePressedDT = DateTime.Now;
+        public static IntPtr processHandle = IntPtr.Zero;
+        public static IntPtr wndHnd = IntPtr.Zero;
         public static IntPtr GWorldPtr = IntPtr.Zero;
         public static IntPtr GNamesPtr = IntPtr.Zero;
         public static IntPtr FNamePool = IntPtr.Zero;
         public static IntPtr ULocalPlayerControler = IntPtr.Zero;
-        public static bool IsDowned = false;
         public static IntPtr bKickbackEnabled = IntPtr.Zero;
-        public static uint Health = 0;
-        public static Vector3 FMinimalViewInfo_Location = new Vector3(0, 0, 0);
-        public static Vector3 FMinimalViewInfo_Rotation = new Vector3(0, 0, 0);
-        public static float FMinimalViewInfo_FOV = 0;
-        public static IntPtr UplayerState = IntPtr.Zero;
-        public static uint EnemyID = 0;
         public static IntPtr LTeamNum = IntPtr.Zero;
         public static IntPtr TeamNum = IntPtr.Zero;
         public static IntPtr LAKSTeamState = IntPtr.Zero;
+        public static IntPtr GameBase = IntPtr.Zero;
+        public static IntPtr GameSize = IntPtr.Zero;
+        public static IntPtr FindWindow = IntPtr.Zero;
+        public static IntPtr ULevel = IntPtr.Zero;
+        public static IntPtr AActors = IntPtr.Zero;
+        public static IntPtr AActor = IntPtr.Zero;
+        public static IntPtr USceneComponent = IntPtr.Zero;
+        public static IntPtr actor_pawn = IntPtr.Zero;
+        public static IntPtr Playerstate = IntPtr.Zero;
+        public static IntPtr AKSTeamState = IntPtr.Zero;
+        public static IntPtr UplayerState = IntPtr.Zero; 
+        public static IntPtr UGameInstance = IntPtr.Zero;
+        public static IntPtr localPlayerArray = IntPtr.Zero;
+        public static IntPtr ULocalPlayer = IntPtr.Zero;
+        public static IntPtr Upawn = IntPtr.Zero; 
+        public static IntPtr APlayerCameraManager = IntPtr.Zero;
+
+        public static bool gameProcessExists = false; //avoid drawing if the game process is dead, or not existent
+        public static bool isWow64Process = false; //we all know the game is 32bit, but anyway...
+        public static bool isGameOnTop = false; //we should avoid drawing while the game is not set on top
+        public static bool isOverlayOnTop = false; //we might allow drawing visuals, while the user is working with the "menu"
+        public static bool IsDowned = false;
+
+        public static uint PROCESS_ALL_ACCESS = 0x1FFFFF; //hardcoded access right to OpenProcess (even EAC strips some of the access flags)
+        public static uint calcPid = 0x1FFFFF;
+        public static uint Health = 0;
+        public static uint EnemyID = 0;
+        public static uint ActorCnt = 0; 
+        public static uint AActorID = 0;
+
+        public static int Offset_AKSTeamState = 0x398;
+        public static int Offset_r_TeamNum = 0x220;
+        public static int dist = 0;
+
+        public static Vector2 wndMargins = new Vector2(0, 0); //if the game window is smaller than your desktop resolution, you should avoid drawing outside of it
+        public static Vector2 wndSize = new Vector2(0, 0); //get the size of the game window ... to know where to draw       
+        public static Vector2 GameCenterPos = new Vector2(0, 0);
+        public static Vector2 GameCenterPos2 = new Vector2(0, 0);
+        public static Vector2 AimTarg2D = new Vector2(0, 0); //for aimbot
+
+        public static Vector3 AimTarg3D = new Vector3(0, 0, 0);
+        public static Vector3 FMinimalViewInfo_Location = new Vector3(0, 0, 0);
+        public static Vector3 FMinimalViewInfo_Rotation = new Vector3(0, 0, 0);
+        public static Vector3 tempVec = new Vector3(0, 0, 0);
+
+        public static float FMinimalViewInfo_FOV = 0;                
         public static float CurrentActorHP = 0;
         public static float CurrentActorHPMax = 0;
-        public static Vector2 AimTarg2D = new Vector2(0, 0); //for aimbot
-        public static Vector3 AimTarg3D = new Vector3(0, 0, 0);
+        
         public static Dictionary<UInt32, string> CachedID = new Dictionary<UInt32, string>();
 
         public static WeScript.SDK.UI.Menu RootMenu { get; private set; }
@@ -160,11 +186,11 @@ namespace RogueCompany
             
             if (processHandle == IntPtr.Zero) //if we still don't have a handle to the process
             {
-                var wndHnd = Memory.FindWindowName("Rogue Company  "); //why the devs added spaces after the name?!
+                wndHnd = Memory.FindWindowName("Rogue Company  "); //why the devs added spaces after the name?!
                 if (wndHnd != IntPtr.Zero) //if it exists
                 {
                     //Console.WriteLine("weheree");
-                    var calcPid = Memory.GetPIDFromHWND(wndHnd); //get the PID of that same process
+                    calcPid = Memory.GetPIDFromHWND(wndHnd); //get the PID of that same process
                     if (calcPid > 0) //if we got the PID
                     {
                         processHandle = Memory.ZwOpenProcess(PROCESS_ALL_ACCESS, calcPid); //the driver will get a stripped handle, but doesn't matter, it's still OK
@@ -182,7 +208,7 @@ namespace RogueCompany
             }
             else //else we have a handle, lets check if we should close it, or use it
             {
-                var wndHnd = Memory.FindWindowName("Rogue Company  "); //why the devs added spaces after the name?!
+                wndHnd = Memory.FindWindowName("Rogue Company  "); //why the devs added spaces after the name?!
                 if (wndHnd != IntPtr.Zero) //window still exists, so handle should be valid? let's keep using it
                 {
                     //the lines of code below execute every 33ms outside of the renderer thread, heavy code can be put here if it's not render dependant
@@ -249,29 +275,29 @@ namespace RogueCompany
             {
 
                 Functions.Ppc();
-                var ULevel = Memory.ZwReadPointer(processHandle, GWorldPtr + 0x30, isWow64Process);
+                ULevel = Memory.ZwReadPointer(processHandle, GWorldPtr + 0x30, isWow64Process);
                 if (GWorldPtr != IntPtr.Zero)
                 {
-                    var AActors = Memory.ZwReadPointer(processHandle, (IntPtr)ULevel.ToInt64() + 0x98, isWow64Process);
-                    var ActorCnt = Memory.ZwReadUInt32(processHandle, (IntPtr)ULevel.ToInt64() + 0xA0);
+                    AActors = Memory.ZwReadPointer(processHandle, (IntPtr)ULevel.ToInt64() + 0x98, isWow64Process);
+                    ActorCnt = Memory.ZwReadUInt32(processHandle, (IntPtr)ULevel.ToInt64() + 0xA0);
 
                     if ((AActors != IntPtr.Zero) && (ActorCnt > 0))
                     {
                         for (uint i = 0; i <= ActorCnt; i++)
                         {
-                            var AActor = Memory.ZwReadPointer(processHandle, (IntPtr)(AActors.ToInt64() + i * 8),
+                            AActor = Memory.ZwReadPointer(processHandle, (IntPtr)(AActors.ToInt64() + i * 8),
                                 isWow64Process);
                             if (AActor != IntPtr.Zero)
                             {
                                                                     
-                                var USceneComponent = Memory.ZwReadPointer(processHandle,
+                                USceneComponent = Memory.ZwReadPointer(processHandle,
                                     (IntPtr)AActor.ToInt64() + 0x130, isWow64Process);
                                 if (USceneComponent != IntPtr.Zero)
                                 {
-                                    var tempVec = Memory.ZwReadVector3(processHandle,
+                                    tempVec = Memory.ZwReadVector3(processHandle,
                                         (IntPtr)USceneComponent.ToInt64() + 0x11C);
 
-                                    var AActorID = Memory.ZwReadUInt32(processHandle,
+                                    AActorID = Memory.ZwReadUInt32(processHandle,
                                         (IntPtr)AActor.ToInt64() + 0x18);
                                     if (!CachedID.ContainsKey(AActorID))
                                     {
@@ -288,16 +314,17 @@ namespace RogueCompany
                                         var retname = CachedID[AActorID];
                                         retname = GetNameFromFName(AActorID);
                                         if (retname.Contains("MainCharacter_C") || retname.Contains("DefaultPVPBotCharacter_C") || retname.Contains("DefaultBotCharacter_C")) EnemyID = AActorID;
-                                        var actor_pawn = Memory.ZwReadPointer(processHandle, (IntPtr)AActor.ToInt64() + 0x118, true);
-                                        var Playerstate = Memory.ZwReadPointer(processHandle, (IntPtr)actor_pawn.ToInt64() + 0x240, true);
+
+                                        //Team Info////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                        actor_pawn = Memory.ZwReadPointer(processHandle, (IntPtr)AActor.ToInt64() + 0x118, true);
+                                        Playerstate = Memory.ZwReadPointer(processHandle, (IntPtr)actor_pawn.ToInt64() + 0x240, true);
                                         IsDowned = Memory.ZwReadBool(processHandle, (IntPtr)AActor.ToInt64() + 0xC18);
                                         bool bKickbackEnableds = Memory.ZwReadBool(processHandle, (IntPtr)Program.ULocalPlayerControler.ToInt64() + 0xAF8);
-                                        var Offset_AKSTeamState = 0x398;
-                                        var Offset_r_TeamNum = 0x220;
-                                        var LAKSTeamState = Memory.ZwReadPointer(processHandle, (IntPtr)UplayerState.ToInt64() + Offset_AKSTeamState, true);
+                                        LAKSTeamState = Memory.ZwReadPointer(processHandle, (IntPtr)UplayerState.ToInt64() + Offset_AKSTeamState, true);
                                         LTeamNum = Memory.ZwReadPointer(processHandle, (IntPtr)LAKSTeamState.ToInt64() + Offset_r_TeamNum, true);
-                                        var AKSTeamState = Memory.ZwReadPointer(processHandle, (IntPtr)Playerstate.ToInt64() + Offset_AKSTeamState, true);
+                                        AKSTeamState = Memory.ZwReadPointer(processHandle, (IntPtr)Playerstate.ToInt64() + Offset_AKSTeamState, true);
                                         TeamNum = Memory.ZwReadPointer(processHandle, (IntPtr)AKSTeamState.ToInt64() + Offset_r_TeamNum, true);
+                                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                                         if (Components.AimbotComponent.NoRecoil.Enabled)
                                         {
@@ -309,11 +336,9 @@ namespace RogueCompany
                                         }
 
                                     }
-                                    if (Components.VisualsComponent.DrawTheVisuals.Enabled) //this should have been placed earlier?
+                                    if (Components.VisualsComponent.DrawTheVisuals.Enabled)
                                     {
-                                        //if (Components.AimbotComponent.NoRecoil.Enabled) NoRecoil();
-
-                                        int dist = (int)(GetDistance3D(FMinimalViewInfo_Location, tempVec));
+                                        dist = (int)(GetDistance3D(FMinimalViewInfo_Location, tempVec));
 
                                         if (AActorID == EnemyID && CurrentActorHP > 0)
                                         {
