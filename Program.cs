@@ -34,6 +34,7 @@ namespace RogueCompany
         public static IntPtr GWorldPtr = IntPtr.Zero;
         public static IntPtr GNamesPtr = IntPtr.Zero;
         public static IntPtr FNamePool = IntPtr.Zero;
+        public static bool IsDowned = false;
         public static uint Health = 0;
         public static Vector3 FMinimalViewInfo_Location = new Vector3(0, 0, 0);
         public static Vector3 FMinimalViewInfo_Rotation = new Vector3(0, 0, 0);
@@ -44,6 +45,7 @@ namespace RogueCompany
         public static IntPtr TeamNum = IntPtr.Zero;
         public static IntPtr LAKSTeamState = IntPtr.Zero;
         public static float CurrentActorHP = 0;
+        public static float CurrentActorHPMax = 0;
         public static Vector2 AimTarg2D = new Vector2(0, 0); //for aimbot
         public static Vector3 AimTarg3D = new Vector3(0, 0, 0);
         public static Dictionary<UInt32, string> CachedID = new Dictionary<UInt32, string>();
@@ -273,6 +275,7 @@ namespace RogueCompany
                                     }
 
                                     CurrentActorHP = Memory.ZwReadFloat(processHandle, (IntPtr)AActor.ToInt64() + 0x528);
+                                    CurrentActorHPMax = Memory.ZwReadFloat(processHandle, (IntPtr)AActor.ToInt64() + 0x287C);
 
                                     //string retname = "";
                                     if ((AActorID > 0)) //&& (AActorID < 700000)
@@ -282,6 +285,7 @@ namespace RogueCompany
                                         if (retname.Contains("MainCharacter_C") || retname.Contains("DefaultPVPBotCharacter_C") || retname.Contains("DefaultBotCharacter_C")) EnemyID = AActorID;
                                         var actor_pawn = Memory.ZwReadPointer(processHandle, (IntPtr)AActor.ToInt64() + 0x118, true);
                                         var Playerstate = Memory.ZwReadPointer(processHandle, (IntPtr)actor_pawn.ToInt64() + 0x240, true);
+                                        IsDowned = Memory.ZwReadBool(processHandle, (IntPtr)Playerstate.ToInt64() + 0xC18);
                                         var Offset_AKSTeamState = 0x398;
                                         var Offset_r_TeamNum = 0x220;
                                         var LAKSTeamState = Memory.ZwReadPointer(processHandle, (IntPtr)UplayerState.ToInt64() + Offset_AKSTeamState, true);
@@ -300,21 +304,21 @@ namespace RogueCompany
                                         {
                                             Vector2 vScreen_h3ad = new Vector2(0, 0);
                                             Vector2 vScreen_f33t = new Vector2(0, 0);
-                                            if (Renderer.WorldToScreenUE4(new Vector3(tempVec.X, tempVec.Y, tempVec.Z + 50.0f), out vScreen_h3ad, FMinimalViewInfo_Location, FMinimalViewInfo_Rotation, FMinimalViewInfo_FOV, wndMargins, wndSize))
+                                            if (Renderer.WorldToScreenUE4(new Vector3(tempVec.X, tempVec.Y, tempVec.Z + 70.0f), out vScreen_h3ad, FMinimalViewInfo_Location, FMinimalViewInfo_Rotation, FMinimalViewInfo_FOV, wndMargins, wndSize))
                                             {
 
-                                                Renderer.WorldToScreenUE4(new Vector3(tempVec.X, tempVec.Y, tempVec.Z - 130.0f), out vScreen_f33t, FMinimalViewInfo_Location, FMinimalViewInfo_Rotation, FMinimalViewInfo_FOV, wndMargins, wndSize);
+                                                Renderer.WorldToScreenUE4(new Vector3(tempVec.X, tempVec.Y, tempVec.Z - 70.0f), out vScreen_f33t, FMinimalViewInfo_Location, FMinimalViewInfo_Rotation, FMinimalViewInfo_FOV, wndMargins, wndSize);
                                                 if (Components.VisualsComponent.DrawBox.Enabled)
                                                 {
                                                     if(LTeamNum != TeamNum)
 
-                                                    Renderer.DrawFPSBox(vScreen_h3ad, vScreen_f33t, Components.VisualsComponent.EnemyColor.Color, BoxStance.standing, Components.VisualsComponent.DrawBoxThic.Value, Components.VisualsComponent.DrawBoxBorder.Enabled);
-                                                    Renderer.DrawText("[" + dist + "m]", vScreen_f33t.X, vScreen_f33t.Y + 5, Components.VisualsComponent.EnemyColor.Color, 12, TextAlignment.centered, false);
+                                                    Renderer.DrawFPSBox(vScreen_h3ad, vScreen_f33t, Components.VisualsComponent.EnemyColor.Color, BoxStance.standing, Components.VisualsComponent.DrawBoxThic.Value, Components.VisualsComponent.DrawBoxBorder.Enabled, true, CurrentActorHP, CurrentActorHPMax);
+                                                    Renderer.DrawText("[" + dist + "m]", vScreen_f33t.X, vScreen_f33t.Y, Components.VisualsComponent.EnemyColor.Color, 12, TextAlignment.centered, false);
                                                 }
                                                 else
                                                 {                        
                                                     Renderer.DrawFPSBox(vScreen_h3ad, vScreen_f33t, Color.Blue, BoxStance.standing, Components.VisualsComponent.DrawBoxThic.Value, Components.VisualsComponent.DrawBoxBorder.Enabled);
-                                                    Renderer.DrawText("[" + dist + "m]", vScreen_f33t.X, vScreen_f33t.Y + 5, Color.Black, 12, TextAlignment.centered, false);                                                   
+                                                    Renderer.DrawText("[" + dist + "m]", vScreen_f33t.X, vScreen_f33t.Y, Color.Black, 12, TextAlignment.centered, false);                                                   
                                                 }   
                                                 
                                             }
@@ -332,7 +336,7 @@ namespace RogueCompany
                                                 AimTarg2D = vScreen_h3ad;
 
 
-                                                if (Components.AimbotComponent.AimKey.Enabled && Components.AimbotComponent.AimGlobalBool.Enabled && dist > 5 && LTeamNum != TeamNum)
+                                                if (Components.AimbotComponent.AimKey.Enabled && Components.AimbotComponent.AimGlobalBool.Enabled && dist > 5 && LTeamNum != TeamNum )
                                                 {
 
                                                     double DistX = AimTarg2D.X - GameCenterPos.X;
