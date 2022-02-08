@@ -235,14 +235,14 @@ namespace RogueCompany
                             if (GWorldPtr == IntPtr.Zero)
                             {
                                 //GWorldPtr = Memory.ZwFindSignature(processHandle, GameBase, GameSize, "48 8B 1D ? ? ? ? 48 85 DB 74 3B 41", 0x3); //4.1 patch
-                                GWorldPtr = Memory.ZwReadPointer(processHandle, GameBase + 0x689BE48, isWow64Process);
+                                GWorldPtr = Memory.ZwReadPointer(processHandle, GameBase + 0x6A0AE18, isWow64Process);
                                 // "Epic Games" GWorldPtr = Memory.ZwReadPointer(processHandle, GameBase + 0x97EA450, isWow64Process);
                             }
 
                             if (GNamesPtr == IntPtr.Zero)
                             {
                                 //GNamesPtr = Memory.ZwFindSignature(processHandle, GameBase, GameSize, "48 8B 05 ? ? ? ? 48 85 C0 75 5F", 0x3); //4.1 patch
-                                GNamesPtr = GameBase + 0x672D200;
+                                GNamesPtr = GameBase + 0x689C100;
                                 //"Epic Games GNamesPtr = GameBase + 0x962D240;
                                 //Console.WriteLine($"GNamesPtr: {GNamesPtr.ToString("X")}");
                             }
@@ -306,7 +306,7 @@ namespace RogueCompany
                                     }
 
                                     CurrentActorHP = Memory.ZwReadFloat(processHandle, (IntPtr)AActor.ToInt64() + 0x528);
-                                    CurrentActorHPMax = Memory.ZwReadFloat(processHandle, (IntPtr)AActor.ToInt64() + 0x287C);
+                                    CurrentActorHPMax = Memory.ZwReadFloat(processHandle, (IntPtr)AActor.ToInt64() + 0x2894);
 
                                     //string retname = "";
                                     if ((AActorID > 0)) //&& (AActorID < 700000)
