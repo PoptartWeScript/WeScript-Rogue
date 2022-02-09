@@ -37,19 +37,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="SharpDX">
-      <HintPath>D:\WeScript\System\SharpDX.dll</HintPath>
+      <HintPath>E:\WeScript\System\SharpDX.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.Direct3D9">
-      <HintPath>D:\WeScript\System\SharpDX.Direct3D9.dll</HintPath>
+      <HintPath>E:\WeScript\System\SharpDX.Direct3D9.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.Mathematics">
-      <HintPath>D:\WeScript\System\SharpDX.Mathematics.dll</HintPath>
+      <HintPath>E:\WeScript\System\SharpDX.Mathematics.dll</HintPath>
     </Reference>
     <Reference Include="SharpDX.XInput">
-      <HintPath>D:\WeScript\System\SharpDX.XInput.dll</HintPath>
+      <HintPath>E:\WeScript\System\SharpDX.XInput.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>D:\WeScript\System\Newtonsoft.Json.dll</HintPath>
+      <HintPath>E:\WeScript\System\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -60,11 +60,11 @@
     <Reference Include="System.Xml" />
     <Reference Include="WeScript.SDK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=794e379116082e38, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>D:\WeScript\System\WeScript.SDK.dll</HintPath>
+      <HintPath>E:\WeScript\System\WeScript.SDK.dll</HintPath>
     </Reference>
     <Reference Include="WeScript.Wrapper, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9ba2d13e4f3dea3f, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>D:\WeScript\System\WeScript.Wrapper.dll</HintPath>
+      <HintPath>E:\WeScript\System\WeScript.Wrapper.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
