@@ -49,6 +49,7 @@ namespace RogueCompany
         public static bool isGameOnTop = false; //we should avoid drawing while the game is not set on top
         public static bool isOverlayOnTop = false; //we might allow drawing visuals, while the user is working with the "menu"
         public static bool IsDowned = false;
+        public static bool bKickbackEnableds = false;
 
         public static uint PROCESS_ALL_ACCESS = 0x1FFFFF; //hardcoded access right to OpenProcess (even EAC strips some of the access flags)
         public static uint calcPid = 0x1FFFFF;
@@ -125,7 +126,6 @@ namespace RogueCompany
                 Components.AimbotComponent.DrawFov,
                 Components.AimbotComponent.AimFovColor,
                 Components.AimbotComponent.NoRecoil,
-
             };
             RootMenu = new WeScript.SDK.UI.Menu("Rogue", "WeScript.app Rogue Company --Poptart--", true)
             {
@@ -135,14 +135,11 @@ namespace RogueCompany
             };
             RootMenu.Attach();
         }
-
         private static double GetDistance2D(Vector2 pos1, Vector2 pos2)
         {
             Vector2 vector = new Vector2(pos1.X - pos2.X, pos1.Y - pos2.Y);
             return Math.Sqrt(vector.X * vector.X + vector.Y * vector.Y);
-        }
-
-        
+        }        
         private static string GetNameFromFName(uint key)
         {
             if (GNamesPtr == IntPtr.Zero)
@@ -156,13 +153,6 @@ namespace RogueCompany
             int nameLength = nameEntry >> 6;
             string result = Memory.ZwReadString(processHandle, (IntPtr)entryOffset + 2, false);
             return result;
-        }
-
-        public static void SigScan()
-        {
-            //GWorldPtr = Memory.ZwFindSignature(processHandle, GameBase, GameSize, "48 89 05 ? ? ? ? 0F 28 D7", 0x3); //4.2
-            GWorldPtr = Memory.ZwReadPointer(processHandle, GameBase + 0x689BE48, isWow64Process);
-            GNamesPtr = GameBase + 0x672D200;
         }
         static void Main(string[] args)
         {
@@ -184,20 +174,18 @@ namespace RogueCompany
         private static void OnTick(int counter, EventArgs args)
         {
             
-            if (processHandle == IntPtr.Zero) //if we still don't have a handle to the process
+            if (processHandle == IntPtr.Zero)
             {
-                wndHnd = Memory.FindWindowName("Rogue Company  "); //why the devs added spaces after the name?!
+                wndHnd = Memory.FindWindowName("Rogue Company  ");
                 if (wndHnd != IntPtr.Zero) //if it exists
                 {
-                    //Console.WriteLine("weheree");
-                    calcPid = Memory.GetPIDFromHWND(wndHnd); //get the PID of that same process
-                    if (calcPid > 0) //if we got the PID
+                    calcPid = Memory.GetPIDFromHWND(wndHnd);
+                    if (calcPid > 0)
                     {
-                        processHandle = Memory.ZwOpenProcess(PROCESS_ALL_ACCESS, calcPid); //the driver will get a stripped handle, but doesn't matter, it's still OK
+                        processHandle = Memory.ZwOpenProcess(PROCESS_ALL_ACCESS, calcPid);
                         if (processHandle != IntPtr.Zero)
                         {
-                            //if we got access to the game, check if it's x64 bit, this is needed when reading pointers, since their size is 4 for x86 and 8 for x64
-                            isWow64Process = Memory.IsProcess64Bit(processHandle); //we know DBD is 64 bit but anyway...
+                            isWow64Process = Memory.IsProcess64Bit(processHandle);
                         }
                         else
                         {
@@ -206,21 +194,19 @@ namespace RogueCompany
                     }
                 }
             }
-            else //else we have a handle, lets check if we should close it, or use it
+            else
             {
-                wndHnd = Memory.FindWindowName("Rogue Company  "); //why the devs added spaces after the name?!
-                if (wndHnd != IntPtr.Zero) //window still exists, so handle should be valid? let's keep using it
+                wndHnd = Memory.FindWindowName("Rogue Company  ");
+                if (wndHnd != IntPtr.Zero)
                 {
-                    //the lines of code below execute every 33ms outside of the renderer thread, heavy code can be put here if it's not render dependant
                     gameProcessExists = true;
                     wndMargins = Renderer.GetWindowMargins(wndHnd);
                     wndSize = Renderer.GetWindowSize(wndHnd);
                     isGameOnTop = Renderer.IsGameOnTop(wndHnd);
                     isOverlayOnTop = Overlay.IsOnTop();
-                    if (GameBase == IntPtr.Zero) //do we have access to Gamebase address?
+                    if (GameBase == IntPtr.Zero)
                     {
-                        GameBase = Memory.ZwGetModule(processHandle, null, isWow64Process); //if not, find it
-                        //Console.WriteLine($"GameBase: {GameBase.ToString("X")}");
+                        GameBase = Memory.ZwGetModule(processHandle, null, isWow64Process);
                         Console.WriteLine("Got GAMEBASE of RogueCompany!");
                     }
                     else
@@ -228,33 +214,26 @@ namespace RogueCompany
                         if (GameSize == IntPtr.Zero)
                         {
                             GameSize = Memory.ZwGetModuleSize(processHandle, null, isWow64Process);
-                            //Console.WriteLine($"GameSize: {GameSize.ToString("X")}");
                         }
                         else
                         {
                             if (GWorldPtr == IntPtr.Zero)
                             {
-                                //GWorldPtr = Memory.ZwFindSignature(processHandle, GameBase, GameSize, "48 8B 1D ? ? ? ? 48 85 DB 74 3B 41", 0x3); //4.1 patch
                                 GWorldPtr = Memory.ZwReadPointer(processHandle, GameBase + 0x6A0AE18, isWow64Process);
-                                // "Epic Games" GWorldPtr = Memory.ZwReadPointer(processHandle, GameBase + 0x97EA450, isWow64Process);
                             }
 
                             if (GNamesPtr == IntPtr.Zero)
                             {
-                                //GNamesPtr = Memory.ZwFindSignature(processHandle, GameBase, GameSize, "48 8B 05 ? ? ? ? 48 85 C0 75 5F", 0x3); //4.1 patch
                                 GNamesPtr = GameBase + 0x689C100;
-                                //"Epic Games GNamesPtr = GameBase + 0x962D240;
-                                //Console.WriteLine($"GNamesPtr: {GNamesPtr.ToString("X")}");
                             }
                         }
                     }
                 }
-                else //else most likely the process is dead, clean up
+                else
                 {
-                    Memory.CloseHandle(processHandle); //close the handle to avoid leaks
-                    processHandle = IntPtr.Zero; //set it like this just in case for C# logic
+                    Memory.CloseHandle(processHandle);
+                    processHandle = IntPtr.Zero;
                     gameProcessExists = false;
-                    //clear your offsets, modules
                     GameBase = IntPtr.Zero;
                     GameSize = IntPtr.Zero;
                     GWorldPtr = IntPtr.Zero;
@@ -264,75 +243,66 @@ namespace RogueCompany
         }        
         private static void OnRenderer(int fps, EventArgs args)
         {
-            if (!gameProcessExists) return; //process is dead, don't bother drawing
-            if ((!isGameOnTop) && (!isOverlayOnTop)) return; //if game and overlay are not on top, don't draw
-            if (!Components.MainAssemblyToggle.Enabled) return; //main menu boolean to toggle the cheat on or off                       
+            if (!gameProcessExists) return;
+            if ((!isGameOnTop) && (!isOverlayOnTop)) return;
+            if (!Components.MainAssemblyToggle.Enabled) return;                      
             double fClosestPos = 999999;
             GameCenterPos = new Vector2(wndSize.X / 2 + wndMargins.X, wndSize.Y / 2 + wndMargins.Y);
-            GameCenterPos2 = new Vector2(wndSize.X / 2 + wndMargins.X, wndSize.Y / 2 + wndMargins.Y + 750.0f);//even if the game is windowed, calculate perfectly it's "center" for aim or crosshair
+            GameCenterPos2 = new Vector2(wndSize.X / 2 + wndMargins.X, wndSize.Y / 2 + wndMargins.Y + 750.0f);
 
             if (GWorldPtr != IntPtr.Zero)
             {
-
                 Functions.Ppc();
                 ULevel = Memory.ZwReadPointer(processHandle, GWorldPtr + 0x30, isWow64Process);
                 if (GWorldPtr != IntPtr.Zero)
                 {
-                    AActors = Memory.ZwReadPointer(processHandle, (IntPtr)ULevel.ToInt64() + 0x98, isWow64Process);
-                    ActorCnt = Memory.ZwReadUInt32(processHandle, (IntPtr)ULevel.ToInt64() + 0xA0);
+                    AActors = Memory.ZwReadPointer(processHandle, (IntPtr)(ULevel.ToInt64() + Offsets.UE.ULevel.AActors), isWow64Process);
+                    ActorCnt = Memory.ZwReadUInt32(processHandle, (IntPtr)(ULevel.ToInt64() + Offsets.UE.ULevel.AActorsCount));
 
                     if ((AActors != IntPtr.Zero) && (ActorCnt > 0))
                     {
                         for (uint i = 0; i <= ActorCnt; i++)
                         {
-                            AActor = Memory.ZwReadPointer(processHandle, (IntPtr)(AActors.ToInt64() + i * 8),
-                                isWow64Process);
+                            AActor = Memory.ZwReadPointer(processHandle, (IntPtr)(AActors.ToInt64() + i * 8),isWow64Process);
                             if (AActor != IntPtr.Zero)
-                            {
-                                                                    
-                                USceneComponent = Memory.ZwReadPointer(processHandle,
-                                    (IntPtr)AActor.ToInt64() + 0x130, isWow64Process);
+                            {                                                                   
+                                USceneComponent = Memory.ZwReadPointer(processHandle,(IntPtr)(AActor.ToInt64() + Offsets.UE.AActor.USceneComponent), isWow64Process);
                                 if (USceneComponent != IntPtr.Zero)
                                 {
-                                    tempVec = Memory.ZwReadVector3(processHandle,
-                                        (IntPtr)USceneComponent.ToInt64() + 0x11C);
-
-                                    AActorID = Memory.ZwReadUInt32(processHandle,
-                                        (IntPtr)AActor.ToInt64() + 0x18);
+                                    tempVec = Memory.ZwReadVector3(processHandle,(IntPtr)(USceneComponent.ToInt64() + Offsets.UE.AActor.tempVec));
+                                    AActorID = Memory.ZwReadUInt32(processHandle,(IntPtr)AActor.ToInt64() + 0x18);
                                     if (!CachedID.ContainsKey(AActorID))
                                     {
                                         var retname = GetNameFromFName(AActorID);
                                         CachedID.Add(AActorID, retname);
                                     }
 
-                                    CurrentActorHP = Memory.ZwReadFloat(processHandle, (IntPtr)AActor.ToInt64() + 0x528);
-                                    CurrentActorHPMax = Memory.ZwReadFloat(processHandle, (IntPtr)AActor.ToInt64() + 0x2894);
+                                    CurrentActorHP = Memory.ZwReadFloat(processHandle, (IntPtr)(AActor.ToInt64() + Offsets.UE.AActor.Health));
+                                    CurrentActorHPMax = Memory.ZwReadFloat(processHandle, (IntPtr)(AActor.ToInt64() + Offsets.UE.AActor.CurrentActorHPMax));
 
-                                    //string retname = "";
-                                    if ((AActorID > 0)) //&& (AActorID < 700000)
+                                    if ((AActorID > 0))
                                     {
                                         var retname = CachedID[AActorID];
                                         retname = GetNameFromFName(AActorID);
                                         if (retname.Contains("MainCharacter_C") || retname.Contains("DefaultPVPBotCharacter_C") || retname.Contains("DefaultBotCharacter_C")) EnemyID = AActorID;
 
                                         //Team Info////////////////////////////////////////////////////////////////////////////////////////////////////////
-                                        actor_pawn = Memory.ZwReadPointer(processHandle, (IntPtr)AActor.ToInt64() + 0x118, true);
-                                        Playerstate = Memory.ZwReadPointer(processHandle, (IntPtr)actor_pawn.ToInt64() + 0x240, true);
-                                        IsDowned = Memory.ZwReadBool(processHandle, (IntPtr)AActor.ToInt64() + 0xC18);
-                                        bool bKickbackEnableds = Memory.ZwReadBool(processHandle, (IntPtr)Program.ULocalPlayerControler.ToInt64() + 0xAF8);
-                                        LAKSTeamState = Memory.ZwReadPointer(processHandle, (IntPtr)UplayerState.ToInt64() + Offset_AKSTeamState, true);
-                                        LTeamNum = Memory.ZwReadPointer(processHandle, (IntPtr)LAKSTeamState.ToInt64() + Offset_r_TeamNum, true);
-                                        AKSTeamState = Memory.ZwReadPointer(processHandle, (IntPtr)Playerstate.ToInt64() + Offset_AKSTeamState, true);
-                                        TeamNum = Memory.ZwReadPointer(processHandle, (IntPtr)AKSTeamState.ToInt64() + Offset_r_TeamNum, true);
+                                        actor_pawn = Memory.ZwReadPointer(processHandle, (IntPtr)(AActor.ToInt64() + Offsets.UE.AActor.actor_pawn), isWow64Process);
+                                        Playerstate = Memory.ZwReadPointer(processHandle, (IntPtr)(actor_pawn.ToInt64() + Offsets.UE.APawn.PlayerState), isWow64Process);
+                                        bKickbackEnableds = Memory.ZwReadBool(processHandle, (IntPtr)(ULocalPlayerControler.ToInt64() + Offsets.UE.AActor.bKickbackEnableds));
+                                        LAKSTeamState = Memory.ZwReadPointer(processHandle, (IntPtr)(UplayerState.ToInt64() + Offset_AKSTeamState), isWow64Process);
+                                        LTeamNum = Memory.ZwReadPointer(processHandle, (IntPtr)(LAKSTeamState.ToInt64() + Offset_r_TeamNum), isWow64Process);
+                                        AKSTeamState = Memory.ZwReadPointer(processHandle, (IntPtr)(Playerstate.ToInt64() + Offset_AKSTeamState), isWow64Process);
+                                        TeamNum = Memory.ZwReadPointer(processHandle, (IntPtr)(AKSTeamState.ToInt64() + Offset_r_TeamNum), isWow64Process);
                                         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
                                         if (Components.AimbotComponent.NoRecoil.Enabled)
                                         {
-                                            bKickbackEnableds = Memory.ZwWriteBool(processHandle, (IntPtr)Program.ULocalPlayerControler.ToInt64() + 0xAF8, false);
+                                            bKickbackEnableds = Memory.ZwWriteBool(processHandle, (IntPtr)(ULocalPlayerControler.ToInt64() + Offsets.UE.AActor.bKickbackEnableds), true);
                                         }
                                         else
                                         {
-                                            bKickbackEnableds = Memory.ZwWriteBool(processHandle, (IntPtr)Program.ULocalPlayerControler.ToInt64() + 0xAF8, true);
+                                            bKickbackEnableds = Memory.ZwWriteBool(processHandle, (IntPtr)(ULocalPlayerControler.ToInt64() + Offsets.UE.AActor.bKickbackEnableds), false);
                                         }
 
                                     }
@@ -351,7 +321,6 @@ namespace RogueCompany
                                                 if (Components.VisualsComponent.DrawBox.Enabled)
                                                 {
                                                     if(LTeamNum != TeamNum)
-
                                                     Renderer.DrawFPSBox(vScreen_h3ad, vScreen_f33t, Components.VisualsComponent.EnemyColor.Color, BoxStance.standing, Components.VisualsComponent.DrawBoxThic.Value, Components.VisualsComponent.DrawBoxBorder.Enabled, true, CurrentActorHP, CurrentActorHPMax);
                                                     Renderer.DrawText("[" + dist + "m]", vScreen_f33t.X, vScreen_f33t.Y, Components.VisualsComponent.EnemyColor.Color, 12, TextAlignment.centered, false);
                                                 }
@@ -359,8 +328,7 @@ namespace RogueCompany
                                                 {                        
                                                     Renderer.DrawFPSBox(vScreen_h3ad, vScreen_f33t, Color.Blue, BoxStance.standing, Components.VisualsComponent.DrawBoxThic.Value, Components.VisualsComponent.DrawBoxBorder.Enabled);
                                                     Renderer.DrawText("[" + dist + "m]", vScreen_f33t.X, vScreen_f33t.Y, Color.Black, 12, TextAlignment.centered, false);                                                   
-                                                }   
-                                                
+                                                }                                                   
                                             }
 
                                             if (Components.AimbotComponent.DrawFov.Enabled) //draw fov circle
@@ -377,22 +345,15 @@ namespace RogueCompany
 
 
                                                 if (Components.AimbotComponent.AimKey.Enabled && Components.AimbotComponent.AimGlobalBool.Enabled && dist > 5 && LTeamNum != TeamNum )
-                                                {
-                                                    
+                                                {                                                    
                                                     double DistX = AimTarg2D.X - GameCenterPos.X;
                                                     double DistY = (AimTarg2D.Y) - GameCenterPos.Y;
-
                                                     double slowDistX = DistX / (0.5f + (Math.Abs(DistX) / (1.0f + Components.AimbotComponent.AimSpeed.Value)));
                                                     double slowDistY = DistY / (0.5f + (Math.Abs(DistY) / (1.0f + Components.AimbotComponent.AimSpeed.Value)));
                                                     Input.mouse_eventWS(MouseEventFlags.MOVE, (int)slowDistX, (int)slowDistY, MouseEventDataXButtons.NONE, IntPtr.Zero);
-
-                                                    //Vector3 Aimassist = new Vector3()
-
                                                 }
-
                                             }
                                         }
-
                                     }
                                 }
                             }
