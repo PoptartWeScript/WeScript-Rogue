@@ -219,12 +219,12 @@ namespace RogueCompany
                         {
                             if (GWorldPtr == IntPtr.Zero)
                             {
-                                GWorldPtr = Memory.ZwReadPointer(processHandle, GameBase + 0x6A0ADF8, isWow64Process);
+                                GWorldPtr = Memory.ZwReadPointer(processHandle, GameBase + 0x6AA2498, isWow64Process);
                             }
 
                             if (GNamesPtr == IntPtr.Zero)
                             {
-                                GNamesPtr = GameBase + 0x689C100;
+                                GNamesPtr = GameBase + 0x69334C0;
                             }
                         }
                     }
