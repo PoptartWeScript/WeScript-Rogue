@@ -5,8 +5,8 @@ namespace RogueCompany
 public class Offsets
 
 {
-   public static Int64 UWorld = 0x6AA34D8;
-   public static Int64 GNames = 0x6934500;
+   public static Int64 UWorld = 0x6ADA478;
+   public static Int64 GNames = 0x696B480;
 
 public class UE
 {
@@ -48,12 +48,12 @@ public class UE
        public static Int64 USceneComponent = 0x130;
        public static Int64 tempVec= 0x11C;
        public static Int64 Health = 0x538;
-       public static Int64 CurrentActorHPMax = 0x28AC;
+       public static Int64 CurrentActorHPMax = 0x282C;
        public static Int64 actor_pawn = 0x118;
-       public static Int64 bKickbackEnableds = 0xAF8;
-       public static Int64 LAKSTeamState = 0x398;
+       public static Int64 bKickbackEnableds = 0xB18;
+       public static Int64 LAKSTeamState = 0x3A8;
        public static Int64 LTeamNum = 0x220;
-       public static Int64 AKSTeamState = 0x398;
+       public static Int64 AKSTeamState = 0x3A8;
        public static Int64 TeamNum = 0x220;
 }
 
