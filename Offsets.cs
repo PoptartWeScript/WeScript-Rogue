@@ -5,8 +5,8 @@ namespace RogueCompany
 public class Offsets
 
 {
-   public static Int64 UWorld = 0x6DEE1B8;
-   public static Int64 GNames = 0x6C7F180;
+   public static Int64 UWorld = 0x6DEE138;
+   public static Int64 GNames = 0x6C7F100;
 
 public class UE
 {
